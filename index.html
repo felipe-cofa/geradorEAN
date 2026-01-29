@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Crachá - Compre Mix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        #badge-container {
+            width: 340px; 
+            height: 215px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 380px) {
+            .preview-scale-wrapper {
+                transform: scale(0.8);
+                transform-origin: center;
+            }
+        }
+
+        .style-color {
+            background-color: #e30613 !important;
+            color: white !important;
+        }
+
+        .style-bw {
+            background-color: white !important;
+            color: black !important;
+            border: 2px solid black !important;
+        }
+
+        .badge-header {
+            text-align: center;
+            width: 100%;
+        }
+
+        .brand-name {
+            font-weight: 900;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .brand-sub {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.9;
+        }
+
+        .info-section {
+            text-align: center;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .name-text {
+            font-weight: 900;
+            font-size: 26px;
+            text-transform: uppercase;
+            line-height: 1.1;
+            word-wrap: break-word;
+            margin-bottom: 4px;
+        }
+
+        .role-text {
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .style-color .role-text { color: #ffcc00; }
+        .style-bw .role-text { color: #000000; opacity: 0.7; }
+
+        .barcode-area {
+            background: white;
+            border-radius: 8px;
+            width: 100%;
+            padding: 6px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 75px;
+            border: 1px solid #eee;
+        }
+
+        .style-bw .barcode-area { border: 1px solid #000; }
+
+        #barcode {
+            max-width: 95%;
+            height: auto;
+        }
+
+        .badge-wrapper {
+            padding: 10px;
+            background: #fff;
+            border-radius: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: fit-content;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100 flex flex-col items-center py-4 sm:py-10 px-4">
+
+    <div class="max-w-6xl w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+        
+        <!-- Formulário -->
+        <div class="p-6 sm:p-8 lg:w-2/5 border-b lg:border-b-0 lg:border-r border-gray-100 order-2 lg:order-1 overflow-y-auto max-h-[90vh]">
+            <div class="bg-red-600 p-4 sm:p-6 rounded-xl sm:rounded-2xl flex flex-col items-center mb-6 shadow-lg">
+                <img src="https://www.compremixatacado.com.br/wp-content/uploads/2022/04/logo-compre-mix.png" alt="Logo" class="h-8 sm:h-10">
+            </div>
+            
+            <div class="mb-6">
+                <h1 class="text-xl font-black text-gray-800 tracking-tighter uppercase text-center lg:text-left">Configurações do Crachá</h1>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Nome e Cargo -->
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome Completo</label>
+                        <input type="text" id="input-name" placeholder="Ex: MARILENE" class="w-full bg-gray-50 border-2 border-gray-100 focus:border-red-500 rounded-xl px-4 py-3 outline-none transition-all font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cargo</label>
+                        <input type="text" id="input-role" placeholder="Ex: FISCAL" class="w-full bg-gray-50 border-2 border-gray-100 focus:border-red-500 rounded-xl px-4 py-3 outline-none transition-all font-bold text-sm">
+                    </div>
+                </div>
+
+                <!-- Configuração de Código -->
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-gray-500 uppercase" id="label-code">Número da Chapa</label>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="check-manual" class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer">
+                            <label for="check-manual" class="ml-2 text-[10px] font-black text-red-600 uppercase cursor-pointer">Modo Manual</label>
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="input-code" placeholder="Digite o código" class="w-full bg-white border-2 border-gray-200 focus:border-red-500 rounded-xl px-4 py-3 outline-none transition-all font-bold text-sm">
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="check-show-text" checked class="w-4 h-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500 cursor-pointer">
+                        <label for="check-show-text" class="ml-2 text-[11px] font-bold text-gray-600 uppercase cursor-pointer">Mostrar código abaixo das barras</label>
+                    </div>
+                </div>
+
+                <!-- Configurações de Saída -->
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1 text-center lg:text-left">Tamanho do PDF</label>
+                        <select id="select-page-size" class="w-full bg-gray-50 border-2 border-gray-100 focus:border-red-500 rounded-xl px-4 py-3 outline-none transition-all font-bold text-sm cursor-pointer">
+                            <option value="a4">Papel A4 (Recortável)</option>
+                            <option value="80x60">Etiqueta 8x6 cm</option>
+                            <option value="100x80">Etiqueta 10x8 cm</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center p-3 bg-red-50 rounded-xl border border-red-100">
+                        <input type="checkbox" id="check-color" class="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer">
+                        <label for="check-color" class="ml-3 text-sm font-bold text-red-700 cursor-pointer">Usar fundo vermelho (Cor)</label>
+                    </div>
+                </div>
+
+                <button onclick="generatePDF()" id="btn-generate" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-lg transform active:scale-95 transition-all mt-4 uppercase flex items-center justify-center text-sm tracking-widest">
+                    Baixar PDF de Impressão
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="lg:w-3/5 bg-gray-50 p-6 sm:p-10 flex flex-col items-center justify-center order-1 lg:order-2 min-h-[400px]">
+            <p class="text-gray-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-4 sm:mb-6">Prévia do Crachá</p>
+
+            <div class="preview-scale-wrapper">
+                <div class="badge-wrapper shadow-2xl">
+                    <div id="badge-container" class="style-bw">
+                        <div class="badge-header">
+                            <h2 class="brand-name">ATACADO COMPRE MIX</h2>
+                            <div class="brand-sub">Credencial Interna</div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <div id="display-name" class="name-text">COLABORADOR</div>
+                            <div id="display-role" class="role-text">CARGO</div>
+                        </div>
+
+                        <div class="barcode-area">
+                            <svg id="barcode"></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status-text" class="mt-6 text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                Padrão: 10999 [CHAPA] 08
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputName = document.getElementById('input-name');
+        const inputRole = document.getElementById('input-role');
+        const inputCode = document.getElementById('input-code');
+        const checkManual = document.getElementById('check-manual');
+        const checkShowText = document.getElementById('check-show-text');
+        const checkColor = document.getElementById('check-color');
+        const selectPageSize = document.getElementById('select-page-size');
+        const labelCode = document.getElementById('label-code');
+        const statusText = document.getElementById('status-text');
+        
+        const badge = document.getElementById('badge-container');
+        const displayName = document.getElementById('display-name');
+        const displayRole = document.getElementById('display-role');
+
+        function updateBadge() {
+            const isManual = checkManual.checked;
+            let finalCode = "";
+            let rawValue = inputCode.value;
+
+            // Ajuste de Labels e Comportamento
+            if (isManual) {
+                labelCode.innerText = "Código Manual (Livre)";
+                statusText.innerText = "Modo de Entrada Livre Ativado";
+                finalCode = rawValue || "EXEMPLO";
+            } else {
+                labelCode.innerText = "Número da Chapa";
+                statusText.innerText = "Padrão: 10999 [CHAPA] 08";
+                
+                // Limpa letras se não for manual
+                let numericValue = rawValue.replace(/\D/g, '').substring(0, 6);
+                inputCode.value = numericValue;
+                
+                let paddedChapa = numericValue.padStart(6, '0');
+                finalCode = `10999${paddedChapa}08`;
+            }
+
+            // Atualiza Textos do Crachá
+            displayName.innerText = inputName.value.trim() || "COLABORADOR";
+            displayRole.innerText = inputRole.value.trim() || "CARGO";
+
+            // Estilo Visual
+            if(checkColor.checked) {
+                badge.classList.remove('style-bw');
+                badge.classList.add('style-color');
+            } else {
+                badge.classList.remove('style-color');
+                badge.classList.add('style-bw');
+            }
+
+            // Geração do Barcode
+            try {
+                JsBarcode("#barcode", finalCode, {
+                    format: "CODE128", // CODE128 suporta qualquer caractere ASCII
+                    lineColor: "#000",
+                    width: 1.6, 
+                    height: 45,
+                    displayValue: checkShowText.checked,
+                    fontSize: 16,
+                    fontOptions: "bold",
+                    margin: 0,
+                    background: "transparent"
+                });
+            } catch (e) {
+                console.warn("Código inválido para este formato", e);
+            }
+        }
+
+        // Listeners
+        [inputName, inputRole, inputCode, checkManual, checkShowText, checkColor].forEach(el => {
+            el.addEventListener('input', updateBadge);
+        });
+
+        // Inicialização
+        updateBadge();
+
+        async function generatePDF() {
+            const btn = document.getElementById('btn-generate');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'GERANDO PDF...';
+            btn.disabled = true;
+
+            const { jsPDF } = window.jspdf;
+            const pageSizeValue = selectPageSize.value;
+
+            try {
+                await new Promise(r => setTimeout(r, 200));
+
+                const canvas = await html2canvas(badge, {
+                    scale: 4, 
+                    useCORS: true,
+                    backgroundColor: null,
+                    logging: false,
+                    width: 340,
+                    height: 215
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                
+                let pdf;
+                let xPos, yPos, drawWidth, drawHeight;
+                const badgeWidth = 85; 
+                const badgeHeight = 54; 
+
+                if (pageSizeValue === 'a4') {
+                    pdf = new jsPDF('p', 'mm', 'a4');
+                    xPos = (210 - badgeWidth) / 2;
+                    yPos = 40;
+                    drawWidth = badgeWidth;
+                    drawHeight = badgeHeight;
+
+                    pdf.setFont("helvetica", "bold");
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(180);
+                    pdf.text("CRACHÁ INTERNO - COMPRE MIX", 105, 30, { align: 'center' });
+
+                    pdf.setDrawColor(200);
+                    pdf.setLineDashPattern([1, 1], 0);
+                    pdf.rect(xPos, yPos, drawWidth, drawHeight);
+                } else {
+                    const [pWidth, pHeight] = pageSizeValue.split('x').map(Number);
+                    pdf = new jsPDF({
+                        orientation: pWidth > pHeight ? 'l' : 'p',
+                        unit: 'mm',
+                        format: [pWidth, pHeight]
+                    });
+
+                    // Proporção para etiquetas menores
+                    if (pWidth < badgeWidth || pHeight < badgeHeight) {
+                        const ratio = Math.min(pWidth / badgeWidth, pHeight / badgeHeight) * 0.95;
+                        drawWidth = badgeWidth * ratio;
+                        drawHeight = badgeHeight * ratio;
+                    } else {
+                        drawWidth = badgeWidth;
+                        drawHeight = badgeHeight;
+                    }
+
+                    xPos = (pWidth - drawWidth) / 2;
+                    yPos = (pHeight - drawHeight) / 2;
+                }
+
+                pdf.addImage(imgData, 'PNG', xPos, yPos, drawWidth, drawHeight);
+
+                const nameFile = inputName.value.split(' ')[0] || 'cracha';
+                pdf.save(`cracha_${nameFile.toLowerCase()}.pdf`);
+
+            } catch (err) {
+                console.error("Erro na geração do PDF:", err);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
