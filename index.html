@@ -54,6 +54,28 @@
         .badge-header {
             text-align: center;
             width: 100%;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .badge-logo {
+            max-height: 35px;
+            max-width: 85%;
+            object-fit: contain;
+            transition: filter 0.3s ease;
+        }
+
+        /* Logo preta no modo P&B */
+        .style-bw .badge-logo {
+            filter: brightness(0);
+        }
+
+        /* Logo original (colorida) no modo Colorido */
+        .style-color .badge-logo {
+            filter: none;
         }
 
         .brand-name {
@@ -134,7 +156,7 @@
         <!-- Formulário -->
         <div class="p-6 sm:p-8 lg:w-2/5 border-b lg:border-b-0 lg:border-r border-gray-100 order-2 lg:order-1 overflow-y-auto max-h-[90vh]">
             <div class="bg-red-600 p-4 sm:p-6 rounded-xl sm:rounded-2xl flex flex-col items-center mb-6 shadow-lg">
-                <img src="https://www.compremixatacado.com.br/wp-content/uploads/2022/04/logo-compre-mix.png" alt="Logo" class="h-8 sm:h-10">
+                <img src="./logo-compre-mix.png" alt="Logo" class="h-8 sm:h-10">
             </div>
             
             <div class="mb-6">
@@ -203,8 +225,8 @@
                 <div class="badge-wrapper shadow-2xl">
                     <div id="badge-container" class="style-bw">
                         <div class="badge-header">
-                            <h2 class="brand-name">ATACADO COMPRE MIX</h2>
-                            <div class="brand-sub">Credencial Interna</div>
+                            <img src="./logo-compre-mix.png" alt="Logo" class="badge-logo" crossorigin="anonymous">
+                            <div class="brand-sub" style="margin-top: 2px;">Credencial Interna</div>
                         </div>
                         
                         <div class="info-section">
@@ -316,10 +338,47 @@
                 const canvas = await html2canvas(badge, {
                     scale: 4, 
                     useCORS: true,
+                    allowTaint: true,
                     backgroundColor: null,
                     logging: false,
                     width: 340,
-                    height: 215
+                    height: 215,
+                    onclone: (clonedDoc) => {
+                        const clonedBadge = clonedDoc.getElementById('badge-container');
+                        const isBW = clonedBadge.classList.contains('style-bw');
+                        
+                        if (isBW) {
+                            const logo = clonedBadge.querySelector('.badge-logo');
+                            // Pega a logo original para garantir que temos os dados
+                            const originalLogo = document.querySelector('.badge-logo');
+                            
+                            if (logo && originalLogo) {
+                                try {
+                                    // Cria um canvas temporário para pintar a imagem de preto
+                                    const c = document.createElement('canvas');
+                                    // Usa tamanho natural para não perder qualidade
+                                    c.width = originalLogo.naturalWidth || originalLogo.width;
+                                    c.height = originalLogo.naturalHeight || originalLogo.height;
+                                    const ctx = c.getContext('2d');
+                                    
+                                    // Desenha a imagem original
+                                    ctx.drawImage(originalLogo, 0, 0, c.width, c.height);
+                                    
+                                    // Pinta de preto preservando a transparência
+                                    ctx.globalCompositeOperation = 'source-in';
+                                    ctx.fillStyle = '#000000';
+                                    ctx.fillRect(0, 0, c.width, c.height);
+                                    
+                                    // Substitui o src da logo clonada pelo dataURL da imagem preta
+                                    logo.src = c.toDataURL('image/png');
+                                    logo.style.filter = 'none'; 
+                                    logo.style.webkitFilter = 'none';
+                                } catch(e) {
+                                    console.error("Erro ao converter logo p/ preto", e);
+                                }
+                            }
+                        }
+                    }
                 });
                 
                 const imgData = canvas.toDataURL('image/png');
